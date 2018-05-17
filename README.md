@@ -6,6 +6,12 @@ Group variables in Unity 3d inspector with style!
 
 ## How to use 
 
+Put attribute before variable and you are done ! 
+
+```csharp
+[Foldout("DESIRED_NAME")]
+```
+
 ```csharp
   public class Player : MonoBehaviour
 {
