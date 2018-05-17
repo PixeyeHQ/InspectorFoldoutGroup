@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -18,21 +19,15 @@ namespace Homebrew
 		private int length;
 		private FieldInfo[] objectFields;
 		private bool initialized;
- 
+
 
 		void OnEnable()
 		{
 			Repaint();
 			initialized = false;
 
-
-			type = Array.Find(ProcessingEditor.types, t => target.GetType() == t);
-		 
-			if (type != null)
-			{
-				objectFields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-				length = objectFields.Length;
-			}
+			objectFields = target.GetType().GetFields();
+			length = objectFields.Length;
 		}
 
 		private void OnDisable()
@@ -47,16 +42,8 @@ namespace Homebrew
 		{
 			serializedObject.Update();
 
-			if (type == null)
-			{
-				DrawDefaultInspector();
-				serializedObject.ApplyModifiedProperties();
-				return;
-			}
-
 			if (!initialized)
 			{
-		 
 				for (var i = 0; i < length; i++)
 				{
 					var fold = Attribute.GetCustomAttribute(objectFields[i], typeof(FoldoutAttribute)) as FoldoutAttribute;
@@ -124,10 +111,9 @@ namespace Homebrew
 					{
 						for (int i = 0; i < pair.Value.props.Count; i++)
 						{
-						 
 							if (pair.Value.props[i].hasChildren)
 								EditorGUI.indentLevel++;
-							
+
 							EditorGUILayout.PropertyField(pair.Value.props[i], new GUIContent(pair.Value.props[i].name), true);
 							if (i == pair.Value.props.Count - 1)
 								EditorGUILayout.Space();
