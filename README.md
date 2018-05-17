@@ -1,4 +1,4 @@
-[![license]](https://github.com/dimmpixeye/InspectorFoldoutGroup/blob/master/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://github.com/dimmpixeye/InspectorFoldoutGroup/blob/master/LICENSE)
 
 # InspectorFoldoutGroup
 Group variables in Unity 3d inspector with style!
