@@ -5,3 +5,14 @@ Group variables in Unity 3d inspector with style!
 
 
 ## How to use 
+
+```csharp
+  public class Player : MonoBehaviour
+{
+	[Foldout("Setup")] public Transform selfTransform;
+	
+	[Foldout("Data")] public int HP;
+	[Foldout("Data")] public int AT;
+ 
+}
+```
