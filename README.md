@@ -1,3 +1,5 @@
+[![license](https://img.shields.io/github/license/Leopotam/ecs.svg)](https://github.com/Leopotam/ecs/blob/develop/LICENSE)
+
 # InspectorFoldoutGroup
 Group variables in Unity 3d inspector with style!
 
