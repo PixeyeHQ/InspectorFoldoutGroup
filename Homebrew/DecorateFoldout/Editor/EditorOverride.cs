@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -19,10 +18,27 @@ namespace Homebrew
 		private int length;
 		private FieldInfo[] objectFields;
 		private bool initialized;
-
+		private Colors colors;
 
 		void OnEnable()
 		{
+			bool pro = EditorGUIUtility.isProSkin;
+
+			if (!pro)
+			{
+				colors = new Colors();
+				colors.col0 = new Color(0.2f, 0.2f, 0.2f, 1f);
+				colors.col1 = new Color(1, 1, 1, 0.55f);
+				colors.col2 = new Color(0.7f, 0.7f, 0.7f, 1f);
+			}
+			else
+			{
+				colors = new Colors();
+				colors.col0 = new Color(0.2f, 0.2f, 0.2f, 1f);
+				colors.col1 = new Color(1, 1, 1, 0.1f);
+				colors.col2 = new Color(0.25f, 0.25f, 0.25f, 1f);
+			}
+
 			Repaint();
 			initialized = false;
 
@@ -41,6 +57,7 @@ namespace Homebrew
 		public override void OnInspectorGUI()
 		{
 			serializedObject.Update();
+
 
 			if (!initialized)
 			{
@@ -72,6 +89,13 @@ namespace Homebrew
 				}
 			}
 
+
+			if (props.Count == 0)
+			{
+				DrawDefaultInspector();
+				return;
+			}
+
 			initialized = true;
 
 			using (new EditorGUI.DisabledScope("m_Script" == props[0].propertyPath))
@@ -87,9 +111,9 @@ namespace Homebrew
 
 				EditorGUILayout.Space();
 				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1),
-					new Color(0.2f, 0.2f, 0.2f, 1f));
+					colors.col0);
 
-				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1), new Color(1, 1, 1, 0.1f));
+				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1), colors.col1);
 
 
 				var v = EditorGUILayout.GetControlRect();
@@ -103,7 +127,7 @@ namespace Homebrew
 				rect = EditorGUILayout.BeginVertical();
 
 				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1),
-					new Color(0.25f, 0.25f, 0.25f, 1f));
+					colors.col2);
 
 				if (pair.Value.expanded)
 				{
@@ -111,8 +135,7 @@ namespace Homebrew
 					{
 						for (int i = 0; i < pair.Value.props.Count; i++)
 						{
-							if (pair.Value.props[i].hasChildren)
-								EditorGUI.indentLevel++;
+							EditorGUI.indentLevel = 1;
 
 							EditorGUILayout.PropertyField(pair.Value.props[i], new GUIContent(pair.Value.props[i].name), true);
 							if (i == pair.Value.props.Count - 1)
@@ -159,7 +182,14 @@ namespace Homebrew
 		}
 
 
-		public class Cache
+		private struct Colors
+		{
+			public Color col0;
+			public Color col1;
+			public Color col2;
+		}
+
+		private class Cache
 		{
 			public HashSet<string> types = new HashSet<string>();
 			public List<SerializedProperty> props = new List<SerializedProperty>();
