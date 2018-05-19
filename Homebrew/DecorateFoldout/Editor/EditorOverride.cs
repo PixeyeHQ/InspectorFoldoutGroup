@@ -19,6 +19,7 @@ namespace Homebrew
 		private FieldInfo[] objectFields;
 		private bool initialized;
 		private Colors colors;
+		private FoldoutAttribute prevFold;
 
 		void OnEnable()
 		{
@@ -42,7 +43,8 @@ namespace Homebrew
 			Repaint();
 			initialized = false;
 
-			objectFields = target.GetType().GetFields();
+			objectFields = target.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic |
+			                                          BindingFlags.Instance);
 			length = objectFields.Length;
 		}
 
@@ -54,6 +56,7 @@ namespace Homebrew
 			}
 		}
 
+
 		public override void OnInspectorGUI()
 		{
 			serializedObject.Update();
@@ -64,9 +67,25 @@ namespace Homebrew
 				for (var i = 0; i < length; i++)
 				{
 					var fold = Attribute.GetCustomAttribute(objectFields[i], typeof(FoldoutAttribute)) as FoldoutAttribute;
-
-					if (fold == null) continue;
 					Cache c;
+					if (fold == null)
+					{
+						if (prevFold != null && prevFold.foldEverything)
+						{
+							if (!cache.TryGetValue(prevFold.name, out c))
+							{
+								cache.Add(prevFold.name, new Cache {atr = prevFold, types = new HashSet<string> {objectFields[i].Name}});
+							}
+							else
+							{
+								c.types.Add(objectFields[i].Name);
+							}
+						}
+
+						continue;
+					}
+
+					prevFold = fold;
 					if (!cache.TryGetValue(fold.name, out c))
 					{
 						cache.Add(fold.name, new Cache {atr = fold, types = new HashSet<string> {objectFields[i].Name}});
