@@ -26,7 +26,7 @@ Put attribute before variable and you are done !
 }
 ```
 
-You don't need to write [Foldout] attribute each time! Instead, you can add "true" bool check afther naming and all your variables will be grouped.
+You don't need to write [Foldout] attribute each time! Instead, you can add "true" bool check afther naming to put all properties to the specified group
 ```csharp
   public class Player : MonoBehaviour
 {
