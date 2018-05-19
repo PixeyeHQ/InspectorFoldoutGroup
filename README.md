@@ -25,3 +25,24 @@ Put attribute before variable and you are done !
  
 }
 ```
+
+You don't need to write [Foldout] attribute each time! Instead, you can add "true" bool check afther naming and all your variables will be grouped.
+```csharp
+  public class Player : MonoBehaviour
+{
+	[Foldout("DATA OBJECT", true)] 
+	public int hp;
+	public int attack = 20;
+	[SerializeField]
+	private GameObject self;
+	
+	[Foldout("DATA ATTACK")] 
+	public int AT;
+ 
+}
+```
+[![https://gyazo.com/2ce500e63fd604de8098aece2fa354fa](https://i.gyazo.com/2ce500e63fd604de8098aece2fa354fa.png)](https://gyazo.com/2ce500e63fd604de8098aece2fa354fa)
+
+ 
+
+
