@@ -156,7 +156,7 @@ namespace Homebrew
 						{
 							EditorGUI.indentLevel = 1;
 
-							EditorGUILayout.PropertyField(pair.Value.props[i], new GUIContent(pair.Value.props[i].name), true);
+							EditorGUILayout.PropertyField(pair.Value.props[i], new GUIContent(pair.Value.props[i].name.FirstLetterToUpperCase()), true);
 							if (i == pair.Value.props.Count - 1)
 								EditorGUILayout.Space();
 						}
@@ -223,4 +223,18 @@ namespace Homebrew
 			}
 		}
 	}
+	
+	public static partial class FrameworkExtensions
+	{
+		public static string FirstLetterToUpperCase(this string s)
+		{
+			if (string.IsNullOrEmpty(s))
+				return string.Empty;
+
+			char[] a = s.ToCharArray();
+			a[0] = char.ToUpper(a[0]);
+			return new string(a);
+		}
+	}
+	
 }
