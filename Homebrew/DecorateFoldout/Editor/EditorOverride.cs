@@ -13,7 +13,7 @@ namespace Homebrew
 	public class EditorOverride : Editor
 	{
 		private Dictionary<string, Cache> cache = new Dictionary<string, Cache>();
-		private List<SerializedProperty> props = new List<SerializedProperty>();
+ 
 		private SerializedProperty propScript;
 		private Type type;
 		private int length;
@@ -22,6 +22,8 @@ namespace Homebrew
 		private Colors colors;
 		private FoldoutAttribute prevFold;
 		private GUIStyle style;
+		private List<Order> orders = new List<Order>();
+		private int index = -1;
 
 		private void Awake()
 		{
@@ -30,7 +32,7 @@ namespace Homebrew
 
 
 			var c_on = Color.white;
-            
+
 			style = new GUIStyle(EditorStyles.foldout);
 
 			style.overflow = new RectOffset(-10, 0, 3, 0);
@@ -44,15 +46,12 @@ namespace Homebrew
 			style.focused.textColor = c_on;
 			style.focused.background = uiTex_in;
 			style.onFocused.textColor = c_on;
-			style.onFocused.background = uiTex_in_on;	
-			
-		 
-			
+			style.onFocused.background = uiTex_in_on;
 		}
 
 		void OnEnable()
 		{
-  
+			index = -1;
 			bool pro = EditorGUIUtility.isProSkin;
 			if (!pro)
 			{
@@ -68,7 +67,7 @@ namespace Homebrew
 				colors.col1 = new Color(1, 1, 1, 0.1f);
 				colors.col2 = new Color(0.25f, 0.25f, 0.25f, 1f);
 			}
-			
+
 			var t = target.GetType();
 			var typeTree = t.GetTypeTree();
 			objectFields = target.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic |
@@ -77,11 +76,10 @@ namespace Homebrew
 
 
 			length = objectFields.Count;
-			
-			
+
+
 			Repaint();
 			initialized = false;
-		 
 		}
 
 		private void OnDisable()
@@ -135,18 +133,20 @@ namespace Homebrew
 
 
 				var property = serializedObject.GetIterator();
+
 				var next = property.NextVisible(true);
 				if (next)
 				{
 					do
 					{
-						HandleProp(property);
+						index++;
+						HandleProp(property, index);
 					} while (property.NextVisible(false));
 				}
 			}
 
 
-			if (props.Count == 0)
+			if (orders.Count == 0)
 			{
 				DrawDefaultInspector();
 				return;
@@ -154,88 +154,108 @@ namespace Homebrew
 
 			initialized = true;
 
-			using (new EditorGUI.DisabledScope("m_Script" == props[0].propertyPath))
+			using (new EditorGUI.DisabledScope("m_Script" == orders[0].prop.propertyPath))
 			{
-				EditorGUILayout.PropertyField(props[0], true);
+				EditorGUILayout.PropertyField(orders[0].prop, true);
 			}
 
 			EditorGUILayout.Space();
 
-			foreach (var pair in cache)
+ 
+			for (int i = 1; i < orders.Count; i++)
 			{
-				var rect = EditorGUILayout.BeginVertical();
+				var order = orders[i];
 
-				EditorGUILayout.Space();
-
-				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1),
-					colors.col0);
-
-				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1), colors.col1);
-
-
-				pair.Value.expanded = EditorGUILayout.Foldout(pair.Value.expanded, pair.Value.atr.name, true,
-					style != null ? style : EditorStyles.foldout);
-
-
-				EditorGUILayout.EndVertical();
-
-				rect = EditorGUILayout.BeginVertical();
-
-				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1),
-					colors.col2);
-
-				if (pair.Value.expanded)
+				if (order.prop != null)
 				{
-					EditorGUILayout.Space();
-					{
-						for (int i = 0; i < pair.Value.props.Count; i++)
-						{
-							EditorGUI.indentLevel = 1;
-
-							EditorGUILayout.PropertyField(pair.Value.props[i],
-								new GUIContent(pair.Value.props[i].name.FirstLetterToUpperCase()), true);
-							if (i == pair.Value.props.Count - 1)
-								EditorGUILayout.Space();
-						}
-					}
+					EditorGUILayout.PropertyField(order.prop, true);
 				}
-
-				EditorGUI.indentLevel = 0;
-				EditorGUILayout.EndVertical();
-				EditorGUILayout.Space();
+				else
+					RenderCache(cache[order.cacheID]);
 			}
 
-
-			for (var i = 1; i < props.Count; i++)
-			{
-				EditorGUILayout.PropertyField(props[i], true);
-			}
-
-
+ 
 			serializedObject.ApplyModifiedProperties();
 			EditorGUILayout.Space();
 		}
 
-
-		public void HandleProp(SerializedProperty prop)
+		void RenderCache(Cache c)
 		{
-			bool shouldBeFolded = false;
+			var rect = EditorGUILayout.BeginVertical();
+
+			EditorGUILayout.Space();
+
+			EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1),
+				colors.col0);
+
+			EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1), colors.col1);
+
+
+			c.expanded = EditorGUILayout.Foldout(c.expanded, c.atr.name, true,
+				style != null ? style : EditorStyles.foldout);
+
+
+			EditorGUILayout.EndVertical();
+
+			rect = EditorGUILayout.BeginVertical();
+
+			EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1),
+				colors.col2);
+
+			if (c.expanded)
+			{
+				EditorGUILayout.Space();
+				{
+					for (int i = 0; i < c.props.Count; i++)
+					{
+						EditorGUI.indentLevel = 1;
+
+						EditorGUILayout.PropertyField(c.props[i],
+							new GUIContent(c.props[i].name.FirstLetterToUpperCase()), true);
+						if (i == c.props.Count - 1)
+							EditorGUILayout.Space();
+					}
+				}
+			}
+
+			EditorGUI.indentLevel = 0;
+			EditorGUILayout.EndVertical();
+			EditorGUILayout.Space();
+		}
+
+
+		public void HandleProp(SerializedProperty prop, int index)
+		{
+	 
+			var order = new Order();
+			order.index = index;
+			order.prop = null;
+			order.cacheID = string.Empty;
 
 			foreach (var pair in cache)
 			{
 				if (pair.Value.types.Contains(prop.name))
 				{
-					shouldBeFolded = true;
+			 
 					pair.Value.props.Add(prop.Copy());
-
-					break;
+					var _o = orders.Find(o => o.cacheID == pair.Key);
+					if (_o==null)
+					{
+						order.cacheID = pair.Key;
+						orders.Add(order);
+					}
+	      
+					return;
 				}
 			}
 
-			if (shouldBeFolded == false)
-			{
-				props.Add(prop.Copy());
-			}
+		 
+	 
+				order.prop = prop.Copy();
+				orders.Add(order);
+			 
+
+	 
 		}
 
 
@@ -246,7 +266,7 @@ namespace Homebrew
 			public Color col2;
 		}
 
-		private class Cache
+		public class Cache
 		{
 			public HashSet<string> types = new HashSet<string>();
 			public List<SerializedProperty> props = new List<SerializedProperty>();
@@ -259,6 +279,13 @@ namespace Homebrew
 				types.Clear();
 				atr = null;
 			}
+		}
+
+		public class Order
+		{
+			public int index;
+			public string cacheID;
+			public SerializedProperty prop;
 		}
 	}
 
