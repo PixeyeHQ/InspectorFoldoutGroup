@@ -1,5 +1,5 @@
 [![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://github.com/dimmpixeye/InspectorFoldoutGroup/blob/master/LICENSE)
-
+[![Join the chat at https://discord.gg/ukhzx83](https://img.shields.io/badge/discord-join%20channel-brightgreen.svg?style=flat-square)](https://discord.gg/ukhzx83)
 # InspectorFoldoutGroup
 Group variables in Unity 3d inspector with style!
 
