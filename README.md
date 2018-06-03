@@ -44,5 +44,7 @@ You don't need to write [Foldout] attribute each time! Instead, you can add "tru
 [![https://gyazo.com/2ce500e63fd604de8098aece2fa354fa](https://i.gyazo.com/2ce500e63fd604de8098aece2fa354fa.png)](https://gyazo.com/2ce500e63fd604de8098aece2fa354fa)
 
  
-
+## Other content
+* [Tag filters](https://github.com/dimmpixeye/Unity3d-Tags-Filters) -  an extension to add foldable groups to the inspector.
+* [ACTORS](https://github.com/dimmpixeye/Actors-Unity3d-Framework) - Unity3d data driven framework I'm currently working on.
 
