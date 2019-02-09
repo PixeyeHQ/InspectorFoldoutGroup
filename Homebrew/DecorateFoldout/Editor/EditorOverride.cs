@@ -193,7 +193,7 @@ namespace Homebrew
 							EditorGUI.indentLevel = 1;
 
 							EditorGUILayout.PropertyField(pair.Value.props[i],
-								new GUIContent(pair.Value.props[i].name.FirstLetterToUpperCase()), true);
+								new GUIContent(pair.Value.props[i].displayName), true);
 							if (i == pair.Value.props.Count - 1)
 								EditorGUILayout.Space();
 						}
