@@ -1,3 +1,7 @@
+﻿//  Project : UNITY FOLDOUT
+// Contacts : Pix - ask@pixeye.games
+
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,145 +10,60 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Homebrew
+
+namespace Pixeye.Unity
 {
 	[CustomEditor(typeof(Object), true, isFallback = true)]
 	[CanEditMultipleObjects]
 	public class EditorOverride : Editor
 	{
-		private Dictionary<string, Cache> cache = new Dictionary<string, Cache>();
-		private List<SerializedProperty> props = new List<SerializedProperty>();
-		private SerializedProperty propScript;
-		private Type type;
-		private int length;
-		private List<FieldInfo> objectFields;
-		private bool initialized;
-		private Colors colors;
-		private FoldoutAttribute prevFold;
-		private GUIStyle style;
-
-		private void Awake()
-		{
-			var uiTex_in = Resources.Load<Texture2D>("IN foldout focus-6510");
-			var uiTex_in_on = Resources.Load<Texture2D>("IN foldout focus on-5718");
+		//===============================//
+		// Members
+		//===============================//
 
 
-			var c_on = Color.white;
-            
-			style = new GUIStyle(EditorStyles.foldout);
+		Dictionary<string, CacheFoldProp> cacheFolds = new Dictionary<string, CacheFoldProp>();
+		List<SerializedProperty> props = new List<SerializedProperty>();
+		List<MethodInfo> methods = new List<MethodInfo>();
+		bool initialized;
 
-			style.overflow = new RectOffset(-10, 0, 3, 0);
-			style.padding = new RectOffset(25, 0, -3, 0);
 
-			style.active.textColor = c_on;
-			style.active.background = uiTex_in;
-			style.onActive.textColor = c_on;
-			style.onActive.background = uiTex_in_on;
+		//===============================//
+		// Logic
+		//===============================//
 
-			style.focused.textColor = c_on;
-			style.focused.background = uiTex_in;
-			style.onFocused.textColor = c_on;
-			style.onFocused.background = uiTex_in_on;	
-			
-		 
-			
-		}
 
 		void OnEnable()
 		{
-  
-			bool pro = EditorGUIUtility.isProSkin;
-			if (!pro)
-			{
-				colors = new Colors();
-				colors.col0 = new Color(0.2f, 0.2f, 0.2f, 1f);
-				colors.col1 = new Color(1, 1, 1, 0.55f);
-				colors.col2 = new Color(0.7f, 0.7f, 0.7f, 1f);
-			}
-			else
-			{
-				colors = new Colors();
-				colors.col0 = new Color(0.2f, 0.2f, 0.2f, 1f);
-				colors.col1 = new Color(1, 1, 1, 0.1f);
-				colors.col2 = new Color(0.25f, 0.25f, 0.25f, 1f);
-			}
-			
-			var t = target.GetType();
-			var typeTree = t.GetTypeTree();
-			objectFields = target.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic |
-			                                          BindingFlags.Instance)
-				.OrderByDescending(x => typeTree.IndexOf(x.DeclaringType)).ToList();
-
-
-			length = objectFields.Count;
-			
-			
-			Repaint();
 			initialized = false;
-		 
 		}
 
-		private void OnDisable()
+
+		void OnDisable()
 		{
-			foreach (var cach in cache)
-			{
-				cach.Value.Dispose();
-			}
+			//if (Application.wantsToQuit)
+			//if (applicationIsQuitting) return;
+			//	if (Toolbox.isQuittingOrChangingScene()) return;
+			if (target != null)
+				foreach (var c in cacheFolds)
+				{
+					EditorPrefs.SetBool(string.Format($"{c.Value.atr.name}{c.Value.props[0].name}{target.name}"), c.Value.expanded);
+					c.Value.Dispose();
+				}
 		}
 
+
+		public override bool RequiresConstantRepaint()
+		{
+			return EditorFramework.needToRepaint;
+		}
 
 		public override void OnInspectorGUI()
 		{
 			serializedObject.Update();
 
 
-			if (!initialized)
-			{
-				for (var i = 0; i < length; i++)
-				{
-					var fold = Attribute.GetCustomAttribute(objectFields[i], typeof(FoldoutAttribute)) as FoldoutAttribute;
-
-					Cache c;
-					if (fold == null)
-					{
-						if (prevFold != null && prevFold.foldEverything)
-						{
-							if (!cache.TryGetValue(prevFold.name, out c))
-							{
-								cache.Add(prevFold.name, new Cache {atr = prevFold, types = new HashSet<string> {objectFields[i].Name}});
-							}
-							else
-							{
-								c.types.Add(objectFields[i].Name);
-							}
-						}
-
-						continue;
-					}
-
-					prevFold = fold;
-					if (!cache.TryGetValue(fold.name, out c))
-					{
-						cache.Add(fold.name, new Cache {atr = fold, types = new HashSet<string> {objectFields[i].Name}});
-					}
-					else
-					{
-						c.types.Add(objectFields[i].Name);
-					}
-				}
-
-
-				var property = serializedObject.GetIterator();
-				var next = property.NextVisible(true);
-				if (next)
-				{
-					do
-					{
-						HandleProp(property);
-					} while (property.NextVisible(false));
-				}
-			}
-
+			Setup();
 
 			if (props.Count == 0)
 			{
@@ -152,81 +71,175 @@ namespace Homebrew
 				return;
 			}
 
-			initialized = true;
+			Header();
+			Body();
 
-			using (new EditorGUI.DisabledScope("m_Script" == props[0].propertyPath))
+			serializedObject.ApplyModifiedProperties();
+
+			void Header()
 			{
-				EditorGUILayout.PropertyField(props[0], true);
+				using (new EditorGUI.DisabledScope("m_Script" == props[0].propertyPath))
+				{
+					EditorGUILayout.Space();
+					EditorGUILayout.PropertyField(props[0], true);
+					EditorGUILayout.Space();
+				}
 			}
 
-			EditorGUILayout.Space();
-
-			foreach (var pair in cache)
+			void Body()
 			{
-				var rect = EditorGUILayout.BeginVertical();
+				foreach (var pair in cacheFolds)
+				{
+					this.UseVerticalLayout(() => Foldout(pair.Value), StyleFramework.box);
+					EditorGUI.indentLevel = 0;
+				}
 
 				EditorGUILayout.Space();
 
-				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1),
-					colors.col0);
-
-				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1), colors.col1);
-
-
-				pair.Value.expanded = EditorGUILayout.Foldout(pair.Value.expanded, pair.Value.atr.name, true,
-					style != null ? style : EditorStyles.foldout);
-
-
-				EditorGUILayout.EndVertical();
-
-				rect = EditorGUILayout.BeginVertical();
-
-				EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1, rect.width + 1, rect.height + 1),
-					colors.col2);
-
-				if (pair.Value.expanded)
+				for (var i = 1; i < props.Count; i++)
 				{
-					EditorGUILayout.Space();
-					{
-						for (int i = 0; i < pair.Value.props.Count; i++)
-						{
-							EditorGUI.indentLevel = 1;
+					// if (props[i].isArray)
+					// {
+					// 	DrawPropertySortableArray(props[i]);
+					// }
+					// else
+					// {
+					EditorGUILayout.PropertyField(props[i], true);
+					//}
+				}
 
-							EditorGUILayout.PropertyField(pair.Value.props[i],
-								new GUIContent(pair.Value.props[i].displayName), true);
-							if (i == pair.Value.props.Count - 1)
-								EditorGUILayout.Space();
-						}
+				EditorGUILayout.Space();
+
+				if (methods == null) return;
+				foreach (MethodInfo memberInfo in methods)
+				{
+					this.UseButton(memberInfo);
+				}
+			}
+
+			void Foldout(CacheFoldProp cache)
+			{
+				cache.expanded = EditorGUILayout.Foldout(cache.expanded, cache.atr.name, true,
+						StyleFramework.foldout);
+
+				if (cache.expanded)
+				{
+					EditorGUI.indentLevel = 1;
+
+					for (int i = 0; i < cache.props.Count; i++)
+					{
+						this.UseVerticalLayout(() => Child(i), StyleFramework.boxChild);
 					}
 				}
 
-				EditorGUI.indentLevel = 0;
-				EditorGUILayout.EndVertical();
-				EditorGUILayout.Space();
+				void Child(int i)
+				{
+					// if (cache.props[i].isArray)
+					// {
+					// 	DrawPropertySortableArray(cache.props[i]);
+					// }
+					// else
+					// {
+					EditorGUILayout.PropertyField(cache.props[i], new GUIContent(cache.props[i].name.FirstLetterToUpperCase()), true);
+					//}
+				}
 			}
 
-
-			for (var i = 1; i < props.Count; i++)
+			void Setup()
 			{
-				EditorGUILayout.PropertyField(props[i], true);
+				EditorFramework.currentEvent = Event.current;
+				if (!initialized)
+				{
+					//	SetupButtons();
+
+					List<FieldInfo>  objectFields;
+					FoldoutAttribute prevFold = default;
+
+					var length = EditorTypes.Get(target, out objectFields);
+
+					for (var i = 0; i < length; i++)
+					{
+						#region FOLDERS
+
+						var           fold = Attribute.GetCustomAttribute(objectFields[i], typeof(FoldoutAttribute)) as FoldoutAttribute;
+						CacheFoldProp c;
+						if (fold == null)
+						{
+							if (prevFold != null && prevFold.foldEverything)
+							{
+								if (!cacheFolds.TryGetValue(prevFold.name, out c))
+								{
+									cacheFolds.Add(prevFold.name, new CacheFoldProp {atr = prevFold, types = new HashSet<string> {objectFields[i].Name}});
+								}
+								else
+								{
+									c.types.Add(objectFields[i].Name);
+								}
+							}
+
+							continue;
+						}
+
+						prevFold = fold;
+
+						if (!cacheFolds.TryGetValue(fold.name, out c))
+						{
+							var expanded = EditorPrefs.GetBool(string.Format($"{fold.name}{objectFields[i].Name}{target.name}"), false);
+							cacheFolds.Add(fold.name, new CacheFoldProp {atr = fold, types = new HashSet<string> {objectFields[i].Name}, expanded = expanded});
+						}
+						else c.types.Add(objectFields[i].Name);
+
+						#endregion
+					}
+
+					var property = serializedObject.GetIterator();
+					var next     = property.NextVisible(true);
+					if (next)
+					{
+						do
+						{
+							HandleFoldProp(property);
+						} while (property.NextVisible(false));
+					}
+
+					initialized = true;
+				}
 			}
 
-
-			serializedObject.ApplyModifiedProperties();
-			EditorGUILayout.Space();
+			// void SetupButtons()
+			// {
+			// 	var members = GetButtonMembers(target);
+			//
+			// 	foreach (var memberInfo in members)
+			// 	{
+			// 		var method = memberInfo as MethodInfo;
+			// 		if (method == null)
+			// 		{
+			// 			continue;
+			// 		}
+			//
+			// 		if (method.GetParameters().Length > 0)
+			// 		{
+			// 			continue;
+			// 		}
+			//
+			// 		if (methods == null) methods = new List<MethodInfo>();
+			// 		methods.Add(method);
+			// 	}
+			// }
 		}
 
-
-		public void HandleProp(SerializedProperty prop)
+		public void HandleFoldProp(SerializedProperty prop)
 		{
 			bool shouldBeFolded = false;
 
-			foreach (var pair in cache)
+			foreach (var pair in cacheFolds)
 			{
 				if (pair.Value.types.Contains(prop.name))
 				{
+					var pr = prop.Copy();
 					shouldBeFolded = true;
-					pair.Value.props.Add(prop.Copy());
+					pair.Value.props.Add(pr);
 
 					break;
 				}
@@ -234,19 +247,24 @@ namespace Homebrew
 
 			if (shouldBeFolded == false)
 			{
-				props.Add(prop.Copy());
+				var pr = prop.Copy();
+				props.Add(pr);
 			}
 		}
 
+		// IEnumerable<MemberInfo> GetButtonMembers(object target)
+		// {
+		// 	return target.GetType()
+		// 			.GetMembers(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.NonPublic)
+		// 			.Where(CheckButtonAttribute);
+		// }
 
-		private struct Colors
-		{
-			public Color col0;
-			public Color col1;
-			public Color col2;
-		}
+		// bool CheckButtonAttribute(MemberInfo memberInfo)
+		// {
+		// 	return Attribute.IsDefined(memberInfo, typeof(ButtonAttribute));
+		// }
 
-		private class Cache
+		class CacheFoldProp
 		{
 			public HashSet<string> types = new HashSet<string>();
 			public List<SerializedProperty> props = new List<SerializedProperty>();
@@ -262,15 +280,108 @@ namespace Homebrew
 		}
 	}
 
-
-	public static partial class FrameworkExtensions
+	static class ditorUIHelper
 	{
+		public static void UseVerticalLayout(this Editor e, Action action, GUIStyle style)
+		{
+			EditorGUILayout.BeginVertical(style);
+			action();
+			EditorGUILayout.EndVertical();
+		}
+
+		public static void UseButton(this Editor e, MethodInfo m)
+		{
+			if (GUILayout.Button(m.Name))
+			{
+				m.Invoke(e.target, null);
+			}
+		}
+	}
+
+
+	static class StyleFramework
+	{
+		public static GUIStyle box;
+		public static GUIStyle boxChild;
+		public static GUIStyle foldout;
+		public static GUIStyle button;
+		public static GUIStyle text;
+
+		static StyleFramework()
+		{
+			bool pro = EditorGUIUtility.isProSkin;
+
+			var uiTex_in    = Resources.Load<Texture2D>("IN foldout focus-6510");
+			var uiTex_in_on = Resources.Load<Texture2D>("IN foldout focus on-5718");
+
+			var c_on = pro ? Color.white : new Color(51 / 255f, 102 / 255f, 204 / 255f, 1);
+
+			button      = new GUIStyle(EditorStyles.miniButton);
+			button.font = Font.CreateDynamicFontFromOSFont(new[] {"Terminus (TTF) for Windows", "Calibri"}, 17);
+
+			text               = new GUIStyle(EditorStyles.label);
+			text.richText      = true;
+			text.contentOffset = new Vector2(0, 5);
+			text.font          = Font.CreateDynamicFontFromOSFont(new[] {"Terminus (TTF) for Windows", "Calibri"}, 14);
+
+			foldout = new GUIStyle(EditorStyles.foldout);
+
+			foldout.overflow = new RectOffset(-10, 0, 3, 0);
+			foldout.padding  = new RectOffset(25, 0, -3, 0);
+
+			foldout.active.textColor    = c_on;
+			foldout.active.background   = uiTex_in;
+			foldout.onActive.textColor  = c_on;
+			foldout.onActive.background = uiTex_in_on;
+
+			foldout.focused.textColor    = c_on;
+			foldout.focused.background   = uiTex_in;
+			foldout.onFocused.textColor  = c_on;
+			foldout.onFocused.background = uiTex_in_on;
+
+			foldout.hover.textColor  = c_on;
+			foldout.hover.background = uiTex_in;
+
+			foldout.onHover.textColor  = c_on;
+			foldout.onHover.background = uiTex_in_on;
+
+			box         = new GUIStyle(GUI.skin.box);
+			box.padding = new RectOffset(10, 0, 10, 0);
+
+			boxChild                     = new GUIStyle(GUI.skin.box);
+			boxChild.active.textColor    = c_on;
+			boxChild.active.background   = uiTex_in;
+			boxChild.onActive.textColor  = c_on;
+			boxChild.onActive.background = uiTex_in_on;
+
+			boxChild.focused.textColor    = c_on;
+			boxChild.focused.background   = uiTex_in;
+			boxChild.onFocused.textColor  = c_on;
+			boxChild.onFocused.background = uiTex_in_on;
+
+			EditorStyles.foldout.active.textColor    = c_on;
+			EditorStyles.foldout.active.background   = uiTex_in;
+			EditorStyles.foldout.onActive.textColor  = c_on;
+			EditorStyles.foldout.onActive.background = uiTex_in_on;
+
+			EditorStyles.foldout.focused.textColor    = c_on;
+			EditorStyles.foldout.focused.background   = uiTex_in;
+			EditorStyles.foldout.onFocused.textColor  = c_on;
+			EditorStyles.foldout.onFocused.background = uiTex_in_on;
+
+			EditorStyles.foldout.hover.textColor  = c_on;
+			EditorStyles.foldout.hover.background = uiTex_in;
+
+			EditorStyles.foldout.onHover.textColor  = c_on;
+			EditorStyles.foldout.onHover.background = uiTex_in_on;
+		}
+
 		public static string FirstLetterToUpperCase(this string s)
 		{
 			if (string.IsNullOrEmpty(s))
 				return string.Empty;
 
-			char[] a = s.ToCharArray();
+			var a = s.ToCharArray();
 			a[0] = char.ToUpper(a[0]);
 			return new string(a);
 		}
@@ -285,6 +396,86 @@ namespace Homebrew
 			}
 
 			return types;
+		}
+	}
+
+	static class EditorTypes
+	{
+		public static Dictionary<int, List<FieldInfo>> fields = new Dictionary<int, List<FieldInfo>>(FastComparable.Default);
+
+		public static int Get(Object target, out List<FieldInfo> objectFields)
+		{
+			var t    = target.GetType();
+			var hash = t.GetHashCode();
+
+			if (!fields.TryGetValue(hash, out objectFields))
+			{
+				var typeTree = t.GetTypeTree();
+				objectFields = target.GetType()
+						.GetFields(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.NonPublic)
+						.OrderByDescending(x => typeTree.IndexOf(x.DeclaringType))
+						.ToList();
+				fields.Add(hash, objectFields);
+			}
+
+			return objectFields.Count;
+		}
+	}
+
+
+	class FastComparable : IEqualityComparer<int>
+	{
+		public static FastComparable Default = new FastComparable();
+
+		public bool Equals(int x, int y)
+		{
+			return x == y;
+		}
+
+		public int GetHashCode(int obj)
+		{
+			return obj.GetHashCode();
+		}
+	}
+
+
+	[InitializeOnLoad]
+	public static class EditorFramework
+	{
+		internal static bool needToRepaint;
+
+		internal static Event currentEvent;
+		internal static float t;
+
+		static EditorFramework()
+		{
+			EditorApplication.update += Updating;
+		}
+
+
+		static void Updating()
+		{
+			CheckMouse();
+
+			if (needToRepaint)
+			{
+				t += Time.deltaTime;
+
+				if (t >= 0.3f)
+				{
+					t             -= 0.3f;
+					needToRepaint =  false;
+				}
+			}
+		}
+
+		static void CheckMouse()
+		{
+			var ev = currentEvent;
+			if (ev == null) return;
+
+			if (ev.type == EventType.MouseMove)
+				needToRepaint = true;
 		}
 	}
 }
