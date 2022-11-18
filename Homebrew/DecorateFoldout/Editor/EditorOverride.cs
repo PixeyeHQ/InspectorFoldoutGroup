@@ -326,7 +326,7 @@ namespace Pixeye.Unity
 			foldout = new GUIStyle(EditorStyles.foldout);
 
 			foldout.overflow = new RectOffset(-10, 0, 3, 0);
-			foldout.padding  = new RectOffset(25, 0, -3, 0);
+			foldout.padding  = new RectOffset(25, 2, -3, 0);
 
 			foldout.active.textColor    = c_on;
 			foldout.active.background   = uiTex_in;
@@ -345,8 +345,8 @@ namespace Pixeye.Unity
 			foldout.onHover.background = uiTex_in_on;
 
 			box         = new GUIStyle(GUI.skin.box);
-			box.padding = new RectOffset(20, 0, 10, 0);
-			box.margin = new RectOffset(0, 0, 0, 0);
+			box.padding = new RectOffset(20, 0, 10, 10);
+			box.margin = new RectOffset(0, 5, 0, 0);
 
 			boxChild                     = new GUIStyle(GUI.skin.box);
 			boxChild.margin = new RectOffset(0, 0, 0, 0);
