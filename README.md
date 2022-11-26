@@ -7,7 +7,13 @@ Group variables in Unity 3d inspector with style!
 
 [![https://gyazo.com/4e6566c2fca783e4cd557f95713a4ab5](https://i.gyazo.com/4e6566c2fca783e4cd557f95713a4ab5.gif)](https://gyazo.com/4e6566c2fca783e4cd557f95713a4ab5)
 
-## How to use 
+## How to use
+
+Add the namespace to your document:
+
+```csharp
+using Pixeye.Unity;
+```
 
 Put attribute before variable and you are done ! 
 

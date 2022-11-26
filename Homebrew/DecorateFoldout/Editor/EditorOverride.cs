@@ -1,7 +1,6 @@
 ﻿//  Project : UNITY FOLDOUT
 // Contacts : Pix - ask@pixeye.games
 
-using Homebrew;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,7 +46,7 @@ namespace Pixeye.Unity
 			if (target != null)
 				foreach (var c in cacheFolds)
 				{
-					EditorPrefs.SetBool(string.Format($"{c.Value.atr.name}{c.Value.props[0].name}{target.GetInstanceID()}"), c.Value.expanded);
+					EditorPrefs.SetBool(string.Format($"{c.Value.atr.name}{c.Value.props[0].name}"), c.Value.expanded);
 					c.Value.Dispose();
 				}
 		}
@@ -184,7 +183,7 @@ namespace Pixeye.Unity
 
 						if (!cacheFolds.TryGetValue(fold.name, out c))
 						{
-							var expanded = EditorPrefs.GetBool(string.Format($"{fold.name}{objectFields[i].Name}{target.GetInstanceID()}"), false);
+							var expanded = EditorPrefs.GetBool(string.Format($"{fold.name}{objectFields[i].Name}"), false);
 							cacheFolds.Add(fold.name, new CacheFoldProp {atr = fold, types = new HashSet<string> {objectFields[i].Name}, expanded = expanded});
 						}
 						else c.types.Add(objectFields[i].Name);
@@ -327,7 +326,7 @@ namespace Pixeye.Unity
 			foldout = new GUIStyle(EditorStyles.foldout);
 
 			foldout.overflow = new RectOffset(-10, 0, 3, 0);
-			foldout.padding  = new RectOffset(25, 0, -3, 0);
+			foldout.padding  = new RectOffset(25, 2, -3, 0);
 
 			foldout.active.textColor    = c_on;
 			foldout.active.background   = uiTex_in;
@@ -346,9 +345,11 @@ namespace Pixeye.Unity
 			foldout.onHover.background = uiTex_in_on;
 
 			box         = new GUIStyle(GUI.skin.box);
-			box.padding = new RectOffset(10, 0, 10, 0);
+			box.padding = new RectOffset(20, 0, 10, 10);
+			box.margin = new RectOffset(0, 5, 0, 0);
 
 			boxChild                     = new GUIStyle(GUI.skin.box);
+			boxChild.margin = new RectOffset(0, 0, 0, 0);
 			boxChild.active.textColor    = c_on;
 			boxChild.active.background   = uiTex_in;
 			boxChild.onActive.textColor  = c_on;
